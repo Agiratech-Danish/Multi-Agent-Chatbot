@@ -26,13 +26,13 @@ class LLMService:
             )
             self.model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant")
         else:
-            openai_key = os.getenv("OPENAI_API_KEY") or getattr(settings, 'openai_api_key', None)
+            openai_key = os.getenv("OPENAI_API_KEY") or getattr(settings, 'OPENAI_API_KEY', None)
             if not openai_key:
                 raise ValueError("No LLM API key found. Set GROQ_API_KEY, OPENAI_API_KEY, or USE_OLLAMA=true")
             self.client = OpenAI(api_key=openai_key)
-            self.model = os.getenv("LLM_MODEL", settings.llm_model)
+            self.model = os.getenv("LLM_MODEL", settings.LLM_MODEL)
         
-        self.temperature = float(os.getenv("TEMPERATURE", settings.temperature))
+        self.temperature = float(os.getenv("TEMPERATURE", settings.TEMPERATURE))
     
     def generate_response(self, prompt: str, context: str = "", use_cache: bool = True) -> tuple:
         """Generate response and return (response, token_count)"""

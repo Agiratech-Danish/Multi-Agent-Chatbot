@@ -9,11 +9,11 @@ settings = get_settings()
 class MemoryService:
     def __init__(self):
         self.use_redis = os.getenv("USE_REDIS", "false").lower() == "true"
-        self.max_context = settings.max_context_length
+        self.max_context = settings.MAX_CONTEXT_LENGTH
         
         if self.use_redis:
             import redis
-            self.redis_client = redis.from_url(settings.redis_url)
+            self.redis_client = redis.from_url(settings.REDIS_URL)
             self.memory = None
         else:
             # FREE: Use in-memory dictionary (no Redis needed)

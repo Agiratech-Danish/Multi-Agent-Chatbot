@@ -11,11 +11,11 @@ settings = get_settings()
 
 class EmbeddingService:
     def __init__(self):
-        self.model = SentenceTransformer(settings.embedding_model)
+        self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
         self.dimension = 384
         self.index = faiss.IndexFlatL2(self.dimension)
         self.documents = []
-        self.vector_path = Path(settings.vector_db_path)
+        self.vector_path = Path(settings.VECTOR_DB_PATH)
         self.vector_path.mkdir(parents=True, exist_ok=True)
         self.index_file = self.vector_path / "faiss_index.bin"
         self.docs_file = self.vector_path / "documents.json"
