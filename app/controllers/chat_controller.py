@@ -1,13 +1,78 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from models.schemas import ChatRequest, ChatResponse
 from services.orchestration_service import OrchestrationService
 from core.database import get_db
 from models.database import ChatSession, ChatHistory, Document
 import uuid
+import json
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 orchestration_service = OrchestrationService()
+
+@router.post("/message/stream")
+async def send_message_stream(request: ChatRequest, db: Session = Depends(get_db)):
+    """Send a message and get streaming response like ChatGPT"""
+    def generate():
+        try:
+            session = db.query(ChatSession).filter(
+                ChatSession.session_id == request.session_id
+            ).first()
+            
+            if not session:
+                session = ChatSession(session_id=request.session_id)
+                db.add(session)
+                db.commit()
+            
+            previous_messages = db.query(ChatHistory).filter(
+                ChatHistory.session_id == session.id
+            ).order_by(ChatHistory.timestamp).all()
+            
+            context_parts = []
+            for msg in previous_messages[-10:]:
+                context_parts.append(f"{msg.role}: {msg.content}")
+            full_context = "\n".join(context_parts)
+            
+            # Stream the response
+            full_response = ""
+            result = orchestration_service.process_query_stream(
+                request.message,
+                request.session_id,
+                db=db,
+                context=full_context
+            )
+            
+            for chunk in result:
+                if isinstance(chunk, dict):
+                    # Metadata chunk
+                    yield f"data: {json.dumps(chunk)}\n\n"
+                else:
+                    # Text chunk
+                    full_response += chunk
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+            
+            # Save to database
+            user_msg = ChatHistory(
+                session_id=session.id,
+                role="user",
+                content=request.message
+            )
+            assistant_msg = ChatHistory(
+                session_id=session.id,
+                role="assistant",
+                content=full_response
+            )
+            db.add(user_msg)
+            db.add(assistant_msg)
+            db.commit()
+            
+            yield "data: [DONE]\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @router.post("/message", response_model=ChatResponse)
 async def send_message(request: ChatRequest, db: Session = Depends(get_db)):

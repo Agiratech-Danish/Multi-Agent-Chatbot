@@ -43,3 +43,26 @@ class OrchestrationService:
                 "sources": [],
                 "error": str(e)
             }
+    
+    def process_query_stream(self, query: str, session_id: str, db: Session = None, **kwargs):
+        """Process query with streaming response"""
+        try:
+            from services.llm_service import LLMService
+            from services.rag_service import RAGService
+            
+            llm_service = LLMService()
+            rag_service = RAGService()
+            
+            # Build context
+            context = self.memory_service.build_context(session_id)
+            
+            # Get relevant documents
+            rag_context = rag_service.retrieve_context(query, k=3)
+            full_context = f"{context}\n\n{rag_context}"
+            
+            # Stream response
+            for chunk in llm_service.generate_response_stream(query, full_context):
+                yield chunk
+                
+        except Exception as e:
+            yield f"Error: {str(e)}"

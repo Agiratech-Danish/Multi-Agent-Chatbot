@@ -115,61 +115,52 @@ if prompt := st.chat_input("Ask me anything..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    # Get response
+    # Get streaming response
     with st.chat_message("assistant"):
-        with st.spinner("🤔 Thinking..."):
-            try:
-                response = requests.post(
-                    f"{API_URL}/chat/message",
-                    json={
-                        "message": prompt,
-                        "session_id": st.session_state.session_id
-                    }
-                )
+        message_placeholder = st.empty()
+        full_response = ""
+        
+        try:
+            # Use streaming endpoint
+            import requests
+            response = requests.post(
+                f"{API_URL}/chat/message/stream",
+                json={
+                    "message": prompt,
+                    "session_id": st.session_state.session_id
+                },
+                stream=True
+            )
+            
+            if response.status_code == 200:
+                for line in response.iter_lines():
+                    if line:
+                        line = line.decode('utf-8')
+                        if line.startswith('data: '):
+                            data_str = line[6:]
+                            if data_str == '[DONE]':
+                                break
+                            try:
+                                data = json.loads(data_str)
+                                if 'chunk' in data:
+                                    full_response += data['chunk']
+                                    message_placeholder.markdown(full_response + "▌")
+                            except:
+                                pass
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    
-                    # Display response
-                    st.markdown(data["response"])
-                    
-                    # Store message with metadata
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": data["response"],
-                        "metadata": {
-                            "agent": data.get("agent_used", "unknown"),
-                            "source_type": data.get("source_type", "unknown"),
-                            "sources_count": len(data.get("sources", [])),
-                            "tokens_used": data.get("tokens_used", 0)
-                        }
-                    })
-                    
-                    # Show metadata
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("🤖 Agent", data.get("agent_used", "unknown"))
-                    with col2:
-                        st.metric("📍 Source", data.get("source_type", "unknown"))
-                    with col3:
-                        st.metric("📚 Sources", len(data.get("sources", [])))
-                    with col4:
-                        st.metric("🔢 Tokens", data.get("tokens_used", 0))
-                    
-                    # Show sources if available
-                    if data.get("sources"):
-                        with st.expander("📖 View Sources"):
-                            for i, source in enumerate(data["sources"], 1):
-                                st.write(f"**Source {i}:**")
-                                if isinstance(source, dict):
-                                    st.json(source)
-                                else:
-                                    st.write(source)
-                else:
-                    error_msg = response.json().get("detail", "Unknown error")
-                    st.error(f"❌ Error: {error_msg}")
-            except Exception as e:
-                st.error(f"❌ Connection error: {str(e)}")
+                # Final response without cursor
+                message_placeholder.markdown(full_response)
+                
+                # Store message
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": full_response
+                })
+            else:
+                st.error(f"❌ Error: {response.status_code}")
+                
+        except Exception as e:
+            st.error(f"❌ Connection error: {str(e)}")
 
 # Footer
 st.divider()

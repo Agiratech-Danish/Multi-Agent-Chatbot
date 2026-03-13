@@ -82,6 +82,36 @@ class LLMService:
                 return "Rate limit exceeded. Please try again in a moment.", 0
             raise
     
+    def generate_response_stream(self, prompt: str, context: str = ""):
+        """Generate streaming response like ChatGPT"""
+        system_message = "You are a helpful AI assistant. Answer based on the provided context."
+        
+        if context:
+            context = context[:2000]
+            system_message += f"\n\nContext:\n{context}"
+        
+        prompt = prompt[:1000]
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt}
+        ]
+        
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=self.temperature,
+                max_tokens=500,
+                stream=True
+            )
+            
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as e:
+            yield f"Error: {str(e)}"
+    
     def generate_with_history(self, messages: list) -> str:
         response = self.client.chat.completions.create(
             model=self.model,
