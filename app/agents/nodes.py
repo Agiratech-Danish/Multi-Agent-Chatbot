@@ -17,7 +17,7 @@ def router_node(state: AgentState) -> AgentState:
     else:
         state["agent_name"] = "retrieval_agent"
     
-    print(f"🔀 Routed to: {state['agent_name']}")
+    print(f" Routed to: {state['agent_name']}")
     return state
 
 def retrieval_node(state: AgentState) -> AgentState:

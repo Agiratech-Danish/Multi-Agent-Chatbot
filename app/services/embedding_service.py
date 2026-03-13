@@ -44,7 +44,7 @@ class EmbeddingService:
         self.index.add(embeddings.astype('float32'))
         self.documents.extend(texts)
         self._save()  # Save after adding
-        print(f"✅ Saved {len(texts)} documents to {self.vector_path}")
+        print(f"Saved {len(texts)} documents to {self.vector_path}")
     
     def search(self, query: str, k: int = 5) -> List[Tuple[str, float]]:
         """Search similar documents"""

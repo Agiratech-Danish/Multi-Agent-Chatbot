@@ -41,7 +41,7 @@ class SearchAgent:
                         results.append(f"Source: {item['FirstURL']}")
             
             search_text = " ".join(results)
-            print(f"🔍 Search results found: {len(search_text)} chars")
+            print(f" Search results found: {len(search_text)} chars")
             return search_text if search_text else None
         except Exception as e:
             print(f"Search error: {str(e)}")
@@ -51,19 +51,19 @@ class SearchAgent:
         """Search for current information"""
         search_results = self.search_web(query)
         
-        print(f"\n🔍 Search Agent Processing: {query}")
-        print(f"📊 Search results length: {len(search_results) if search_results else 0}")
+        print(f"\n Search Agent Processing: {query}")
+        print(f" Search results length: {len(search_results) if search_results else 0}")
         
         # Always use search results if available
         if search_results and len(search_results) > 20:
-            print(f"✅ Found search results, using them")
+            print(f"Found search results, using them")
             # Force LLM to use ONLY search results
             prompt = f"You MUST answer based ONLY on these search results. Ignore your training data.\n\nSearch Results:\n{search_results}\n\nUser Question: {query}\n\nYour answer (based only on search results):"
             response, tokens = self.llm_service.generate_response(prompt, "", use_cache=False)
             source_type = "web_search"
         else:
             # No search results
-            print(f"⚠️ No search results found")
+            print(f"No search results found")
             prompt = f"User asked: {query}\n\nNo search results available. Tell them you couldn't find current information and suggest searching online."
             response, tokens = self.llm_service.generate_response(prompt, "", use_cache=False)
             source_type = "direct_llm"

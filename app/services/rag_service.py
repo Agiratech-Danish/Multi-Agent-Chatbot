@@ -74,7 +74,7 @@ class RAGService:
         self.embedding_service.add_documents(documents)
         tokenized_docs = [doc.lower().split() for doc in self.documents]
         self.bm25 = BM25Okapi(tokenized_docs)
-        print(f"✅ RAG Service now has {len(self.documents)} documents")
+        print(f"RAG Service now has {len(self.documents)} documents")
     
     def retrieve_context(self, query: str, k: int = 3) -> str:
         """Retrieve and format context for LLM with token limit"""

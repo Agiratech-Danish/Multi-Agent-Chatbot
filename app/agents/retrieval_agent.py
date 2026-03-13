@@ -44,16 +44,16 @@ class RetrievalAgent:
         try:
             # Check if documents exist
             num_docs = len(self.rag_service.documents)
-            print(f"\n📊 RAG Status: {num_docs} documents in vector store")
+            print(f"\n RAG Status: {num_docs} documents in vector store")
             
             if num_docs == 0:
                 # No documents, use LLM directly
-                print("⚠️ Using DIRECT LLM (no documents)")
+                print(" Using DIRECT LLM (no documents)")
                 response, tokens = self.llm_service.generate_response(query, context)
                 
                 # Check if LLM couldn't answer
                 if self._should_use_search(response):
-                    print("🔍 LLM couldn't answer, routing to search agent")
+                    print("LLM couldn't answer, routing to search agent")
                     from agents.search_agent import SearchAgent
                     search_agent = SearchAgent()
                     return search_agent.process(query, context)
@@ -64,21 +64,21 @@ class RetrievalAgent:
                     "sources": [],
                     "source_type": "direct_llm",
                     "tokens_used": tokens,
-                    "note": f"⚠️ Using Direct LLM - No documents uploaded yet. Upload PDFs to enable RAG."
+                    "note": f"Using Direct LLM - No documents uploaded yet. Upload PDFs to enable RAG."
                 }
             
             # Retrieve relevant context from documents
-            print(f"✅ Using RAG with {num_docs} documents")
+            print(f" Using RAG with {num_docs} documents")
             retrieved_context = self.rag_service.retrieve_context(query, k=3)
             sources = self.rag_service.hybrid_search(query, k=3)
             
             # Check if retrieved context is actually relevant
             if not self._is_relevant(retrieved_context, query):
-                print("⚠️ Retrieved context not relevant, using Direct LLM")
+                print(" Retrieved context not relevant, using Direct LLM")
                 response, tokens = self.llm_service.generate_response(query, context)
                 
                 if self._should_use_search(response):
-                    print("🔍 LLM couldn't answer, routing to search agent")
+                    print(" LLM couldn't answer, routing to search agent")
                     from agents.search_agent import SearchAgent
                     search_agent = SearchAgent()
                     return search_agent.process(query, context)
@@ -100,7 +100,7 @@ class RetrievalAgent:
             
             # Check if LLM couldn't answer
             if self._should_use_search(response):
-                print("🔍 LLM couldn't answer, routing to search agent")
+                print(" LLM couldn't answer, routing to search agent")
                 from agents.search_agent import SearchAgent
                 search_agent = SearchAgent()
                 return search_agent.process(query, context)
@@ -111,11 +111,11 @@ class RetrievalAgent:
                 "sources": sources,
                 "source_type": "rag",
                 "tokens_used": tokens,
-                "note": f"✅ Using RAG - Answer generated from {num_docs} uploaded documents."
+                "note": f" Using RAG - Answer generated from {num_docs} uploaded documents."
             }
         except Exception as e:
             # Fallback to search agent on error
-            print(f"❌ RAG Error: {str(e)}, routing to search agent")
+            print(f" RAG Error: {str(e)}, routing to search agent")
             from agents.search_agent import SearchAgent
             search_agent = SearchAgent()
             return search_agent.process(query, context)
